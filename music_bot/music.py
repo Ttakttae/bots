@@ -68,6 +68,11 @@ async def add_playlist_videos(video_key, voice_channel, author_id, channel):
         length = information['duration']
         add_playlist(voice_channel, vi, title, length, author_id, audio_url, title)
 
+async def downloading(url):
+    with youtube_dl.YoutubeDL(option) as ydl:
+        information = ydl.extract_info(url, download=False)
+    return information
+
 ### ------------------------###
 
 @slash.slash(name="ping", description="pong!")
@@ -177,16 +182,16 @@ async def play(message, song: str):
         if url_search:
             await message.send(content=lng.tl("finding.song", str(message.guild.id)))
             url = "https://www.youtube.com/watch?v={}".format(video_key)
-            with youtube_dl.YoutubeDL(option) as ydl:
-                information = ydl.extract_info(url, download=False)
+            information = await downloading(url)
+            await asyncio.sleep(1)
             audio_url = information['formats'][0]['url']
             title = information["title"]
             length = information['duration']
             add_playlist(voice_channel, video_key, title, length, message.author.id, audio_url, title)
 
         elif not_youtube_search:
-            with youtube_dl.YoutubeDL(option) as ydl:
-                information = ydl.extract_info(url, download=False)
+            information = await downloading(url)
+            await asyncio.sleep(1)
             audio_url = information['formats'][0]['url']
             title = information["title"]
             try:
@@ -215,8 +220,8 @@ async def play(message, song: str):
                 pass
             video_key = search_result.videoId[0]
             url = "https://www.youtube.com/watch?v={}".format(video_key)
-            with youtube_dl.YoutubeDL(option) as ydl:
-                information = ydl.extract_info(url, download=False)
+            information = await downloading(url)
+            await asyncio.sleep(1)
             audio_url = information['formats'][0]['url']
             title = information["title"]
             length = information['duration']
@@ -245,10 +250,12 @@ async def pause(message):
         voice_channel = message.author.voice.channel
         voice = discord.utils.get(client.voice_clients, guild = message.guild) #봇의 음성 관련 정보
         if voice.is_playing(): #노래가 재생중이면
-            time[voice_channel]["paused-time"] = time[voice_channel]["now-remaining"]
-            playlist[voice_channel]["list"][0]["length"] = time[voice_channel]["paused-time"]
-
-            await mp_dic[str(message.channel.id)].task_kill()
+            if playlist[voice_channel]["list"][0]["length"] == 0:
+                pass
+            else:
+                time[voice_channel]["paused-time"] = time[voice_channel]["now-remaining"]
+                playlist[voice_channel]["list"][0]["length"] = time[voice_channel]["paused-time"]
+                await mp_dic[str(message.channel.id)].task_kill()
 
             voice.pause() #일시정지
             await message.send(content=lng.tl("voice.pause", str(message.guild.id)))
@@ -269,7 +276,10 @@ async def resume(message):
         if voice.is_paused(): #일시정지 상태이면
             voice.resume()
             await message.send(content=lng.tl("voice.replay", str(message.guild.id)))
-            await mp_dic[str(message.channel.id)].create_task(voice, voice_channel, message, playlist, str(message.guild.id))
+            if playlist[voice_channel]["list"][0]["length"] == 0:
+                pass
+            else:
+                await mp_dic[str(message.channel.id)].create_task(voice, voice_channel, message, playlist, str(message.guild.id))
         else:
             await message.send(content=lng.tl("voice.replay.voice_playing", str(message.guild.id)))
 
@@ -308,18 +318,27 @@ async def skip(message):
                 voice = vc
 
         if playlist_music_count(voice_channel) >= 1:
-            if playlist_music_count(voice_channel) > 1 or playlist[voice_channel]["loop"] == "single" or playlist[voice_channel]["loop"] == "all+":
+            if playlist_music_count(voice_channel) > 1 or playlist[voice_channel]["loop"] == "single" or playlist[voice_channel]["loop"] == "all":
                 await message.send(content=lng.tl("voice.skip", str(message.guild.id)))
                 voice.stop()
-                await mp_dic[str(message.channel.id)].task_kill()
+                if playlist[voice_channel]["list"][0]["length"] == 0:
+                    pass
+                else:
+                    await mp_dic[str(message.channel.id)].task_kill()
                 next_playlist(voice_channel)
                 source = FFmpegPCMAudio(playlist[voice_channel]["list"][0]["audio_url"], **FFMPEG_OPTIONS)  # converts the youtube audio source into a source discord can use
                 voice.play(source)
                 await message.send(content=lng.tl("voice.play", str(message.guild.id)).format(playlist[voice_channel]["list"][0]["video_title"]))
-                await mp_dic[str(message.channel.id)].create_task(voice, voice_channel, message, playlist, str(message.guild.id))
+                if playlist[voice_channel]["list"][0]["length"] == 0:
+                    pass
+                else:
+                    await mp_dic[str(message.channel.id)].create_task(voice, voice_channel, message, playlist, str(message.guild.id))
             else:
                 voice.stop()
-                await mp_dic[str(message.channel.id)].task_kill()
+                if playlist[voice_channel]["list"][0]["length"] == 0:
+                    pass
+                else:
+                    await mp_dic[str(message.channel.id)].task_kill()
                 delete_playlist(voice_channel, 1)
                 await message.send(content=lng.tl("voice.skip", str(message.guild.id)))
         else:
@@ -347,7 +366,10 @@ async def delete(message, number: int):
 
         elif 0 == music_number < playlist_music_count(voice_channel):
             if music_number+1 == playlist_music_count(voice_channel):
-                await mp_dic[str(message.channel.id)].task_kill()
+                if playlist[voice_channel]["list"][0]["length"] == 0:
+                    pass
+                else:
+                    await mp_dic[str(message.channel.id)].task_kill()
                 await message.send(lng.tl("voice.delete", str(message.guild.id)).format(playlist[voice_channel]["list"][music_number]["video_title"]))
                 voice.stop()
                 delete_playlist(voice_channel, music_number + 1)
@@ -357,7 +379,10 @@ async def delete(message, number: int):
                 if playlist[voice_channel]["loop"] == "single":
                     await message.send(content=lng.tl("voice.delete", str(message.guild.id)).format(playlist[voice_channel]["list"][music_number]["video_title"]))
                     voice.stop()
-                    await mp_dic[str(message.channel.id)].task_kill()
+                    if playlist[voice_channel]["list"][0]["length"] == 0:
+                        pass
+                    else:
+                        await mp_dic[str(message.channel.id)].task_kill()
                     loop = "off"
                     playlist_set_loop_mode(voice_channel, loop)
                     delete_playlist(voice_channel, music_number + 1)
@@ -365,17 +390,26 @@ async def delete(message, number: int):
                     voice.play(source)  # play the source
                     await message.send(content=lng.tl("voice.play", str(message.guild.id)).format(playlist[voice_channel]["list"][0]["video_title"]))
                     await asyncio.sleep(playlist[voice_channel]["list"][0]["length"]+1)
-                    await mp_dic[str(message.channel.id)].create_task(voice, voice_channel, message, playlist, str(message.guild.id))
+                    if playlist[voice_channel]["list"][0]["length"] == 0:
+                        pass
+                    else:
+                        await mp_dic[str(message.channel.id)].create_task(voice, voice_channel, message, playlist, str(message.guild.id))
                 else:
                     await message.send(content=lng.tl("voice.delete", str(message.guild.id)).format(playlist[voice_channel]["list"][music_number]["video_title"]))
                     voice.stop()
-                    await mp_dic[str(message.channel.id)].task_kill()
+                    if playlist[voice_channel]["list"][0]["length"] == 0:
+                        pass
+                    else:
+                        await mp_dic[str(message.channel.id)].task_kill()
                     delete_playlist(voice_channel, music_number + 1)
                     source = FFmpegPCMAudio(playlist[voice_channel]["list"][0]["audio_url"], **FFMPEG_OPTIONS)  # converts the youtube audio source into a source discord can use
                     voice.play(source)  # play the source
                     await message.send(content=lng.tl("voice.play", str(message.guild.id)).format(playlist[voice_channel]["list"][0]["video_title"]))
                     await asyncio.sleep(playlist[voice_channel]["list"][0]["length"]+1)
-                    await mp_dic[str(message.channel.id)].create_task(voice, voice_channel, message, playlist, str(message.guild.id))
+                    if playlist[voice_channel]["list"][0]["length"] == 0:
+                        pass
+                    else:
+                        await mp_dic[str(message.channel.id)].create_task(voice, voice_channel, message, playlist, str(message.guild.id))
 
 
         else:

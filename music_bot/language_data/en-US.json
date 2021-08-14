@@ -34,7 +34,7 @@
   "voice.play" : "▶️play ''{}''🎵",
   "voice.pause": "🎵the song has been ⏸paused",
   "voice.pause.voice_not_playing": "no 🎵songs in play",
-  "Voice.replay": "playing 🎵the song ⏯again",
+  "voice.replay": "playing 🎵the song ⏯again",
   "voice.replay.voice_playing": "song is currently playing❌",
   "voice.playlist.title": "list currently playing(loop : {})",
   "voice.skip" : "skipping 🎵this song",

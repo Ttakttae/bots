@@ -34,7 +34,7 @@
   "voice.play" : "播放 ``{}``",
   "voice.pause": "这首歌被暂停了",
   "voice.pause.voice_not_playing": "没有歌",
-  "Voice.replay": "再玩这首歌",
+  "voice.replay": "再玩这首歌",
   "voice.replay.voice_playing": "歌曲目前正在玩",
   "voice.playlist.title": "歌曲列表(重复 : {})",
   "voice.skip" : "跳过这首歌",

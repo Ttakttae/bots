@@ -34,7 +34,7 @@
   "voice.play" : "''{}''再生",
   "voice.pause": "曲は中断されました",
   "voice.pause.voice_not_playing": "再生されている曲がありません。",
-  "Voice.replay": "歌を再生します。",
+  "voice.replay": "歌を再生します。",
   "voice.replay.voice_playing": "歌は現在再生中です。",
   "voice.playlist.title": "再生リスト(ループ : {})",
   "voice.skip" : "この曲を飛ばします。",

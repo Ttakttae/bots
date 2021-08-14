@@ -24,7 +24,10 @@ class music_playing:
             self.source = FFmpegPCMAudio(playlist[voice_channel]["list"][0]["audio_url"], **FFMPEG_OPTIONS)  # converts the youtube audio source into a source discord can use
             voice.play(self.source)  # play the source
             await channel.send(lng.tl("voice.play", server_id).format(playlist[voice_channel]["list"][0]["video_title"]))
-            await self.create_task(voice, voice_channel, channel, playlist, server_id)
+            if playlist[voice_channel]["list"][0]["length"] == 0:
+                pass
+            else:
+                await self.create_task(voice, voice_channel, channel, playlist, server_id)
         except:
             pass
 
