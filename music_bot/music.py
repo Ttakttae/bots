@@ -39,6 +39,7 @@ lng.load_all_language()
 lng.load_server_language()
 
 mp_dic = {}
+keyword_search_dic = {}
 ### -----------------------###
 
 ### playlist 함수------------###
@@ -79,11 +80,11 @@ async def downloading(url):
 async def ping(message):
     await message.send(content=f"Pong! {client.latency*1000}ms")
 
-@slash.slash(name="제작진", description="만든이")
+@slash.slash(name="madeby", description="만든이")
 async def madeby(message):
     await message.send(content=lng.tl("made_by", str(message.guild.id)))
 
-@slash.slash(name="입장", description="음성 채널에 입장합니다")
+@slash.slash(name="join", description="음성 채널에 입장합니다")
 async def join(message):
     try:
         voice_channel = message.author.voice.channel
@@ -104,7 +105,7 @@ async def join(message):
         finally:
             pass
 
-@slash.slash(name="퇴장", description="음성채널에서 나갑니다")
+@slash.slash(name="leave", description="음성채널에서 나갑니다")
 async def leave(message):
     try:
         voice_channel = message.author.voice.channel
@@ -129,7 +130,7 @@ async def leave(message):
 
         del mp_dic[str(message.channel.id)]
 
-@slash.slash(name="재생", description="노래를 재생합니다", options=[create_option(name="song", description="유튜브 링크나 검색 키워드(라이브 스트리밍, 플레이리스트, 그냥 동영상 모두 가능)", option_type=3, required=True)])
+@slash.slash(name="play", description="노래를 재생합니다", options=[create_option(name="song", description="유튜브 링크나 검색 키워드(라이브 스트리밍, 플레이리스트, 그냥 동영상 모두 가능)", option_type=3, required=True)])
 async def play(message, song: str):
     url = song
     try:
@@ -153,6 +154,7 @@ async def play(message, song: str):
                 voice = vc
 
         ### mp3 다운로드-----------###
+        now_play = False
         url_search = False
         playlist_search = False
         not_youtube_search = False
@@ -180,6 +182,7 @@ async def play(message, song: str):
             video_key = url
 
         if url_search:
+            now_play = True
             await message.send(content=lng.tl("finding.song", str(message.guild.id)))
             url = "https://www.youtube.com/watch?v={}".format(video_key)
             information = await downloading(url)
@@ -190,6 +193,7 @@ async def play(message, song: str):
             add_playlist(voice_channel, video_key, title, length, message.author.id, audio_url, title)
 
         elif not_youtube_search:
+            now_play = True
             information = await downloading(url)
             await asyncio.sleep(1)
             audio_url = information['formats'][0]['url']
@@ -205,6 +209,7 @@ async def play(message, song: str):
             add_playlist(voice_channel, video_key, title, length, message.author.id, audio_url, title)
 
         elif playlist_search:
+            now_play = True
             await message.send(content=lng.tl("cheking.playlist", str(message.guild.id)))
             await add_playlist_videos(video_key, voice_channel, message.author.id, message)
             await message.send(content=lng.tl("playlist.add", str(message.guild.id)))
@@ -218,27 +223,50 @@ async def play(message, song: str):
                 search_result.videoId.remove(None)
             except:
                 pass
-            video_key = search_result.videoId[0]
-            url = "https://www.youtube.com/watch?v={}".format(video_key)
-            information = await downloading(url)
+            keyword_search_dic[message.channel] = {"songs" : [], "message" : "", "author": message.author.id}
+            number = 1
+            text = ""
+            for vk in search_result.videoId:
+                if number <=9:
+                    url = "https://www.youtube.com/watch?v={}".format(vk)
+                    information = await downloading(url)
+                    audio_url = information['formats'][0]['url']
+                    title = information["title"]
+                    length = information['duration']
+                    song_dic = {"video_key": vk, "url": url, "audio_url": audio_url, "title": title, "length": length}
+                    keyword_search_dic[message.channel]["songs"].append(song_dic)
+                    text += f"{number}. {title}\n"
+                    number += 1
+            embed = discord.Embed(title=lng.tl("song.search.result", str(message.guild.id)), description=text, color=0xECDDC3)
             await asyncio.sleep(1)
-            audio_url = information['formats'][0]['url']
-            title = information["title"]
-            length = information['duration']
-            add_playlist(voice_channel, video_key, title, length, message.author.id, audio_url, title)
+            msg = await message.send(embed=embed)
+            keyword_search_dic[message.channel]["message"] = msg
+            await msg.add_reaction("1️⃣")
+            await msg.add_reaction("2️⃣")
+            await msg.add_reaction("3️⃣")
+            await msg.add_reaction("4️⃣")
+            await msg.add_reaction("5️⃣")
+            await msg.add_reaction("6️⃣")
+            await msg.add_reaction("7️⃣")
+            await msg.add_reaction("8️⃣")
+            await msg.add_reaction("9️⃣")
 
-        if not vc.is_playing():
-            source = FFmpegPCMAudio(playlist[voice_channel]["list"][0]["audio_url"], **FFMPEG_OPTIONS)# converts the youtube audio source into a source discord can use
-            voice.play(source)  # play the source
-            await message.send(content=lng.tl("voice.play", str(message.guild.id)).format(playlist[voice_channel]["list"][0]["title"])) # ``text`` 진하기로 노래 제목 강조
-            if playlist[voice_channel]["list"][0]["length"] == 0:
-                pass
+        if now_play:
+            if not vc.is_playing():
+                source = FFmpegPCMAudio(playlist[voice_channel]["list"][0]["audio_url"], **FFMPEG_OPTIONS)# converts the youtube audio source into a source discord can use
+                voice.play(source)  # play the source
+                await message.send(content=lng.tl("voice.play", str(message.guild.id)).format(playlist[voice_channel]["list"][0]["title"])) # ``text`` 진하기로 노래 제목 강조
+                if playlist[voice_channel]["list"][0]["length"] == 0:
+                    pass
+                else:
+                    await mp_dic[str(message.channel.id)].create_task(voice, voice_channel, message, playlist, str(message.guild.id))
             else:
-                await mp_dic[str(message.channel.id)].create_task(voice, voice_channel, message, playlist, str(message.guild.id))
+                await message.send(content=lng.tl("song.add", str(message.guild.id)))
         else:
-            await message.send(content=lng.tl("song.add", str(message.guild.id)))
+            pass
 
-@slash.slash(name="일시정지", description="노래를 잠시 중지합니다")
+
+@slash.slash(name="pause", description="노래를 잠시 중지합니다")
 async def pause(message):
     try:
         voice_channel = message.author.voice.channel
@@ -262,7 +290,7 @@ async def pause(message):
         else:
             await message.send(content=lng.tl("voice.pause.voice_not_playing", str(message.guild.id)))
 
-@slash.slash(name="다시재생", description="노래를 다시 재생합니다")
+@slash.slash(name="resume", description="노래를 다시 재생합니다")
 async def resume(message):
     try:
         voice_channel = message.author.voice.channel
@@ -283,7 +311,7 @@ async def resume(message):
         else:
             await message.send(content=lng.tl("voice.replay.voice_playing", str(message.guild.id)))
 
-@slash.slash(name="재생목록", description="재생목록을 보여줍니다")
+@slash.slash(name="playlist", description="재생목록을 보여줍니다")
 async def queue(message):
     try:
         voice_channel = message.author.voice.channel
@@ -304,7 +332,7 @@ async def queue(message):
         embed = discord.Embed(title = lng.tl("voice.playlist.title", str(message.guild.id)).format(playlist[voice_channel]["loop"]), description = "{}".format(result), color = 0xECDDC3)
         await message.send(embed = embed)
 
-@slash.slash(name="건너뛰기", description="노래를 건너뜁니다")
+@slash.slash(name="skip", description="노래를 건너뜁니다")
 async def skip(message):
     try:
         voice_channel = message.author.voice.channel
@@ -344,7 +372,7 @@ async def skip(message):
         else:
             await message.send(content=lng.tl("delete.no.song", str(message.guild.id)))
 
-@slash.slash(name="삭제", description="노래를 삭제합니다", options=[create_option(name="number", description="삭제할 노래의 숫자(재생목록에 나온 숫자 기준)", option_type=4, required=True)])
+@slash.slash(name="delete", description="노래를 삭제합니다", options=[create_option(name="number", description="삭제할 노래의 숫자(재생목록에 나온 숫자 기준)", option_type=4, required=True)])
 async def delete(message, number: int):
     try:
         voice_channel = message.author.voice.channel
@@ -416,7 +444,7 @@ async def delete(message, number: int):
             await message.send(content=lng.tl("delete.no.song", str(message.guild.id)))# 삭제하려는 노래가 플레이 리스트 범위를 넘거나 0보다 작음
 
 
-@slash.slash(name="반복", description="노래 한곡이나 전체를 반복하거나, 반복을 끕니다", options=[create_option(name="mode", description="한곡: single, 전체: all, 끄기: off", option_type=3, required=True)])
+@slash.slash(name="loop", description="노래 한곡이나 전체를 반복하거나, 반복을 끕니다", options=[create_option(name="mode", description="한곡: single, 전체: all, 끄기: off", option_type=3, required=True)])
 async def loop(message, mode: str):
     try:
         voice_channel = message.author.voice.channel
@@ -447,7 +475,7 @@ async def loop(message, mode: str):
             playlist_set_loop_mode(voice_channel, loop)
             await message.send(content=lng.tl("voice.loop.off", str(message.guild.id)))
 
-@slash.slash(name="언어변경", description="출력되는 언어(slash command 이름이나 설명 아님)를 변경합니다", options=[create_option(name="language", description="다음중 선택(korean, english, chinese, japanese)", option_type=3, required=True)])
+@slash.slash(name="language_change", description="출력되는 언어(slash command 이름이나 설명 아님)를 변경합니다", options=[create_option(name="language", description="다음중 선택(korean, english, chinese, japanese)", option_type=3, required=True)])
 async def language_change(message, language: str):
     if language == "korean":
         lng.channel_language[str(message.guild.id)] = 'ko-KR'
@@ -474,4 +502,88 @@ async def on_ready():
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="/명령어")) #상태설정
     discord.Permissions.use_slash_commands = True
 
+@client.event
+async def on_reaction_add(reaction, member):
+    if member.bot == 1: #봇이면 패스
+        return None
+    for vc in client.voice_clients:
+        if vc.guild == reaction.message.guild:
+            voice = vc
+    try:
+        voice_channel = reaction.message.author.voice.channel
+        author_in_voice_chanel = True
+    except:
+        author_in_voice_chanel = False
+    if author_in_voice_chanel:
+        if str(member.id) == str(keyword_search_dic[reaction.message.channel]["author"]):
+            if str(reaction.emoji) == "1️⃣":
+                video_key = keyword_search_dic[reaction.message.channel]["songs"][0]["video_key"]
+                title = keyword_search_dic[reaction.message.channel]["songs"][0]["title"]
+                length = keyword_search_dic[reaction.message.channel]["songs"][0]["length"]
+                audio_url = keyword_search_dic[reaction.message.channel]["songs"][0]["audio_url"]
+
+            if str(reaction.emoji) == "2️⃣":
+                video_key = keyword_search_dic[reaction.message.channel]["songs"][1]["video_key"]
+                title = keyword_search_dic[reaction.message.channel]["songs"][1]["title"]
+                length = keyword_search_dic[reaction.message.channel]["songs"][1]["length"]
+                audio_url = keyword_search_dic[reaction.message.channel]["songs"][1]["audio_url"]
+
+            if str(reaction.emoji) == "3️⃣":
+                video_key = keyword_search_dic[reaction.message.channel]["songs"][2]["video_key"]
+                title = keyword_search_dic[reaction.message.channel]["songs"][2]["title"]
+                length = keyword_search_dic[reaction.message.channel]["songs"][2]["length"]
+                audio_url = keyword_search_dic[reaction.message.channel]["songs"][2]["audio_url"]
+
+            if str(reaction.emoji) == "4️⃣":
+                video_key = keyword_search_dic[reaction.message.channel]["songs"][3]["video_key"]
+                title = keyword_search_dic[reaction.message.channel]["songs"][3]["title"]
+                length = keyword_search_dic[reaction.message.channel]["songs"][3]["length"]
+                audio_url = keyword_search_dic[reaction.message.channel]["songs"][3]["audio_url"]
+
+            if str(reaction.emoji) == "5️⃣":
+                video_key = keyword_search_dic[reaction.message.channel]["songs"][4]["video_key"]
+                title = keyword_search_dic[reaction.message.channel]["songs"][4]["title"]
+                length = keyword_search_dic[reaction.message.channel]["songs"][4]["length"]
+                audio_url = keyword_search_dic[reaction.message.channel]["songs"][4]["audio_url"]
+
+            if str(reaction.emoji) == "6️⃣":
+                video_key = keyword_search_dic[reaction.message.channel]["songs"][5]["video_key"]
+                title = keyword_search_dic[reaction.message.channel]["songs"][5]["title"]
+                length = keyword_search_dic[reaction.message.channel]["songs"][5]["length"]
+                audio_url = keyword_search_dic[reaction.message.channel]["songs"][5]["audio_url"]
+
+            if str(reaction.emoji) == "7️⃣":
+                video_key = keyword_search_dic[reaction.message.channel]["songs"][6]["video_key"]
+                title = keyword_search_dic[reaction.message.channel]["songs"][6]["title"]
+                length = keyword_search_dic[reaction.message.channel]["songs"][6]["length"]
+                audio_url = keyword_search_dic[reaction.message.channel]["songs"][6]["audio_url"]
+
+            if str(reaction.emoji) == "8️⃣":
+                video_key = keyword_search_dic[reaction.message.channel]["songs"][7]["video_key"]
+                title = keyword_search_dic[reaction.message.channel]["songs"][7]["title"]
+                length = keyword_search_dic[reaction.message.channel]["songs"][7]["length"]
+                audio_url = keyword_search_dic[reaction.message.channel]["songs"][7]["audio_url"]
+
+            if str(reaction.emoji) == "9️⃣":
+                video_key = keyword_search_dic[reaction.message.channel]["songs"][8]["video_key"]
+                title = keyword_search_dic[reaction.message.channel]["songs"][8]["title"]
+                length = keyword_search_dic[reaction.message.channel]=["songs"][8]["length"]
+                audio_url = keyword_search_dic[reaction.message.channel]["songs"][8]["audio_url"]
+
+            add_playlist(voice_channel, video_key, title, length, reaction.message.author.id, audio_url, title)
+            await keyword_search_dic[reaction.message.channel]["message"].clear_reactions()
+            if not vc.is_playing():
+                source = FFmpegPCMAudio(playlist[voice_channel]["list"][0]["audio_url"], **FFMPEG_OPTIONS)# converts the youtube audio source into a source discord can use
+                voice.play(source)  # play the source
+                embed = discord.Embed(title=lng.tl("song.play", str(reaction.message.guild.id)), description=lng.tl("voice.play", str(reaction.message.guild.id)).format(title), color=0xacf6f1)
+                await keyword_search_dic[reaction.message.channel]["message"].edit(content="", embed=embed)
+                if playlist[voice_channel]["list"][0]["length"] == 0:
+                    pass
+                else:
+                    await mp_dic[str(reaction.message.channel.id)].create_task(voice, voice_channel, reaction.message.channel, playlist, str(reaction.message.guild.id))
+            else:
+                embed = discord.Embed(title=lng.tl("music.add", str(reaction.message.guild.id)), description=lng.tl("song.add", str(reaction.message.guild.id)), color=0xacf6f1)
+                await keyword_search_dic[reaction.message.channel]["message"].edit(content="", embed=embed)
+
 client.run(token)
+client.slash()
