@@ -6,3 +6,5 @@ requests
 PyNaCl
 google-api-python-client
 discord-py-slash-command~=3.0.0
+billboard.py
+lyricsgenius

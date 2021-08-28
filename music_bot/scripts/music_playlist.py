@@ -1,3 +1,5 @@
+import random
+
 global playlist
 
 playlist = {}
@@ -15,10 +17,10 @@ def reset_channel_playlist(channel):
 def playlist_set_loop_mode(channel, loop_mode):
     playlist[channel]["loop"] = "{}".format(loop_mode)
 
-def add_playlist(channel, video_key, video_title, length, author, audio_url, title): # 플레이리스트 추가하기
+def add_playlist(channel, video_key, video_title, length, author, audio_url, title, search_keyword): # 플레이리스트 추가하기
     check_channel_playlist(channel)
 
-    video_dic = {"video_key": video_key, "video_title": video_title, "length": length, "author" : author, "audio_url" : audio_url, "title" : title}
+    video_dic = {"video_key": video_key, "video_title": video_title, "length": length, "author" : author, "audio_url" : audio_url, "title" : title, "search_keyword": search_keyword}
 
     if video_dic in playlist[channel]["list"]:
         playlist[channel]["list"].remove(video_dic)
@@ -39,5 +41,12 @@ def next_playlist(channel): # 플레이리스트 다음으로 넘기기
 
         if playlist[channel]["loop"] == "all":
             playlist[channel]["list"].append(next_music)
+
+        if playlist[channel]["loop"] == "shuffle":
+            next_song_number = random.randrange(1, len(playlist[channel]["list"]))
+            next_song = playlist[channel]["list"][next_song_number]
+            del playlist[channel]["list"][next_song_number]
+            playlist[channel]["list"].insert(0, next_song)
+
     else:
         pass

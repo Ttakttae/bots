@@ -26,6 +26,9 @@
   "checking.playlist" : "私はプレイリストをチェックしました",
   "finding.song": "曲を探す",
   "playlist.add": "プレイリスト内のすべての曲が追加されました",
+  "song.search.result": "歌の検索結果",
+  "song.play": "歌の再生",
+  "music.add": "歌の追加",
 
 
   "voice.set_language": "言語は日本語に変更されました",
@@ -38,7 +41,7 @@
   "voice.replay.voice_playing": "歌は現在再生中です。",
   "voice.playlist.title": "再生リスト(ループ : {})",
   "voice.skip" : "この曲を飛ばします。",
-  "voice.remove" : "``{}``を削除します",
+  "voice.delete" : "``{}``を削除します",
   "voice.loop.all" : "すべての曲をループ",
   "voice.loop.one" : "ループ ``{}``",
   "voice.loop.off" : "ループはオフです",
@@ -50,7 +53,18 @@
   "no.lang" : "``{}``という言語はありません",
   "no.permission" : "私は音声チャネルを入力する権限がありません",
   "enter.voice_channel" : "音声チャンネルに入った後は注文してください <@{}>",
-
+  "voice.shuffle" : "歌をシャッフルします。",
+  "no.song.shuffle" : "シャッフルする歌がありません。",
+  "playlist.clear" : "プレイリストの全曲を削除しました。",
+  "bot.not.voice.channel" : "現在ボットがチャンネルにありません。",
+  "time.seek" : "時間を{}秒に移動しました。",
+  "live.no.seek" : "ライブ映像は、時間の移動ができません。",
+  "this.channel" : "現在チャンネルです。",
+  "move.successful" : "成功的にチャンネルを移動しました。",
+  "finding.lyrics" : "歌詞を探索中です。",
+  "different.channel" : "ロボットと他のチャンネルにあります。",
+  "already.in.channel" : "すでにチャンネルに入っています。",
+  "no.song.to.search" : "検索歌なし",
 
   "made_by" : "プロデューサー : MBP16#3062 , 폎폎#6139 , 쿠로#8927"
 }
