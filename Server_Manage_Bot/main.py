@@ -17,7 +17,7 @@ slash = SlashCommand(client, sync_commands=True)
 
 @slash.slash(name="specification", description="컴퓨터의 사양을 보여줍니다.")
 async def specification(message):
-    specification = str(subprocess.check_output('ls')).encode("UTF-8")
+    specification = subprocess.check_output(["neofetch"], shell=True).decode('ascii')
     print(specification)
     await message.send(specification)
 
