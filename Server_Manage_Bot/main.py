@@ -27,7 +27,7 @@ async def run(message, command: str):
         commands = command.split(" ")
         result = subprocess.check_output(commands, shell=True).decode('ascii')
         print(result)
-        if result > 2000:
+        if len(result) > 2000:
             await message.send(result[0:2000])
             await message.send("메시지가 너무 길어 2000자만 보냅니다.")
         else:
