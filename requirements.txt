@@ -1,0 +1,6 @@
+discord~=1.7.3
+asyncio~=3.4.3
+PyNaCl #일부만
+discord-py-slash-command~=3.0.0
+python-dotenv
+Neis_API #school_notificator_bot만
