@@ -1,11 +1,9 @@
-import asyncio, discord, json, os, Neis_API
-import notificator
+import asyncio, discord, json, os, notificator, dotenv
 from discord_slash import SlashCommand, SlashContext
-from dotenv import load_dotenv
 from discord_slash.utils.manage_commands import create_option
 
 try:
-    load_dotenv("./token.env")
+    dotenv.load_dotenv("./token.env")
     token = os.getenv('token')
 except:
     token = os.environ['token']
@@ -67,8 +65,7 @@ async def school_list(message, channel: str):
 async def on_ready():
     print('봇시작')
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="학교 정보")) #상태설정
-    discord.Permissions.use_slash_commands = True
-    notificator.notificator()
+    await notificator.notificator()
 
 
 if __name__ == "__main__":

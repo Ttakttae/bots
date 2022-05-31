@@ -1,4 +1,4 @@
-import discord, discord_slash, Neis_API, asyncio
+import discord, discord_slash, asyncio
 
 async def notificator():
     pass
