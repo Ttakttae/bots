@@ -8,7 +8,7 @@ try:
     load_dotenv("./token.env")
     token = os.getenv('token')
 except:
-    token = os.environ['token']
+    token = os.environ['server_managing_bot_token']
 
 print(token)
 intents = discord.Intents.default()
