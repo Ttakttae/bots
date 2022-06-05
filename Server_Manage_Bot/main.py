@@ -17,9 +17,9 @@ slash = SlashCommand(client, sync_commands=True)
 
 @slash.slash(name="specification", description="컴퓨터의 사양을 보여줍니다.")
 async def specification(message):
-    specification = subprocess.check_output(["neofetch"], shell=True).decode('ascii')[0:2000]
+    specification = subprocess.check_output("neofetch --color_blocks off", shell=True).decode('ascii')[0:1994]
     print(specification)
-    await message.send(specification)
+    await message.send("```" + specification + "```")
 
 @slash.slash(name="run", description="서버의 터미널에 원격으로 명령을 실행시킵니다", options=[create_option(name="command", description="실행 할 명령", option_type=3, required=True)])
 async def run(message, command: str):
@@ -27,10 +27,10 @@ async def run(message, command: str):
         result = subprocess.check_output(command, shell=True).decode('ascii')
         print(result)
         if len(result) > 2000:
-            await message.send(result[0:2000])
+            await message.send("```" + result[0:1994] + "```")
             await message.send("메시지가 너무 길어 2000자만 보냅니다.")
         else:
-            await message.send(result)
+            await message.send("```" + result + "```")
     else:
         await message.send("서버 관리 채널에서만 사용할 수 있는 명령어입니다.")
 
